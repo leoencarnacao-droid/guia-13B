@@ -1,0 +1,26 @@
+name: ZAP Security Scan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  zap-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run ZAP Automation Framework
+        uses: zaproxy/action-af@v0.1.0
+        with:
+          plan: ".zap/zap-plan.yml"
+
+      - name: Upload ZAP Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: reports/

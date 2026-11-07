@@ -1,0 +1,21 @@
+env:
+  contexts:
+    - name: NotesApp
+      urls:
+        - http://localhost
+      includePaths:
+        - http://localhost.*
+
+jobs:
+  - type: spider
+    parameters:
+      context: NotesApp
+      maxDuration: 2
+
+  - type: passiveScan-wait
+
+  - type: report
+    parameters:
+      template: traditional-html
+      reportDir: reports
+      reportFile: zap-report.html
