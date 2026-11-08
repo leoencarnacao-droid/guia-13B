@@ -13,3 +13,9 @@ jobs:
       maxDuration: 2
 
   - type: passiveScan-wait
+
+  - type: report
+    parameters:
+      template: traditional-html
+      reportDir: /zap/wrk/reports
+      reportFile: zap-report.html
