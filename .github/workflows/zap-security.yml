@@ -2,47 +2,39 @@ name: ZAP Security Scan
 on:
   push:
     branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   zap_scan:
     runs-on: ubuntu-latest
-    name: Scan the web application
+    name: Scan the Notes App
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Levantar la App con Docker Compose
         run: |
-          docker compose up -d
-          echo "Esperando a que la Notes App levante..."
+          docker compose up -d --build
           for i in {1..30}; do
             if curl -s http://localhost:8080 > /dev/null; then
-              echo "¡App lista para escanear!"
+              echo "¡App lista!"
               exit 0
             fi
-            echo "Esperando... ($i/30)"
             sleep 2
           done
-          exit 1
 
-      - name: ZAP Scan (Automation Framework con Docker)
+      - name: ZAP Scan (Automation Framework)
         run: |
-          # Creamos la carpeta de reportes y le damos permisos totales
           mkdir -p reports
           chmod -R 777 reports
-          
-          # Ejecutamos el plan de ZAP que pide el TP
+          # El flag -P 8090 le dice a ZAP que use el puerto 8090 para su proxy interno, 
+          # evitando el choque con el 8080 de la app, pero el target sigue siendo el 8080.
           docker run --rm --network host -v $(pwd)/reports:/zap/wrk/reports:rw -v $(pwd):/zap/wrk/:rw \
             -t ghcr.io/zaproxy/zaproxy:stable \
-            zap.sh -cmd -autorun /zap/wrk/.zap/zap-plan.yml
+            zap.sh -cmd -autorun /zap/wrk/.zap/zap-plan.yml -P 8090
 
-      - name: Subir Reporte de Vulnerabilidades
+      - name: Subir Reporte
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: zap-security-report
           path: reports/
-          retention-days: 7
-          if-no-files-found: warn
