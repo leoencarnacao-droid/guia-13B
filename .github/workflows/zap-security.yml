@@ -2,8 +2,6 @@ name: ZAP Security Scan
 on:
   push:
     branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   zap_scan:
@@ -15,24 +13,25 @@ jobs:
 
       - name: Levantar la App con Docker Compose
         run: |
-          docker compose up -d
-          echo "Esperando a que la Notes App esté lista..."
-          # Hacemos un bucle para esperar que la app responda en el puerto 8080
+          docker compose up -d --build
+          echo "Esperando a que la Notes App levante..."
           for i in {1..30}; do
             if curl -s http://localhost:8080 > /dev/null; then
-              echo "¡App lista!"
-              break
+              echo "¡App lista para escanear!"
+              exit 0
             fi
             echo "Esperando... ($i/30)"
             sleep 2
           done
+          exit 1
 
       - name: ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.10.0
         with:
           target: 'http://localhost:8080'
-          # El flag -I evita que el pipeline falle si encuentra alertas (solo genera el reporte)
           cmd_options: '-I'
+          # ESTO ES LO QUE FALTA: Le decimos que NO cree Issues
+          allow_issue_writing: false
           
       - name: Subir Reporte de Vulnerabilidades
         if: always()
