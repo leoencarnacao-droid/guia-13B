@@ -2,18 +2,20 @@ name: ZAP Security Scan
 on:
   push:
     branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   zap_scan:
     runs-on: ubuntu-latest
-    name: Scan the Notes App
+    name: Scan the web application
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Levantar la App con Docker Compose
         run: |
-          docker compose up -d --build
+          docker compose up -d
           echo "Esperando a que la Notes App levante..."
           for i in {1..30}; do
             if curl -s http://localhost:8080 > /dev/null; then
@@ -25,19 +27,22 @@ jobs:
           done
           exit 1
 
-      - name: ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.10.0
-        with:
-          target: 'http://localhost:8080'
-          cmd_options: '-I'
-          allow_issue_writing: false
-          # ESTO ES LO QUE FALTA: Evitamos que ZAP suba el artifact (lo hacemos nosotros abajo)
-          artifact_name: ''
+      - name: ZAP Scan (Automation Framework con Docker)
+        run: |
+          # Creamos la carpeta de reportes y le damos permisos totales
+          mkdir -p reports
+          chmod -R 777 reports
+          
+          # Ejecutamos el plan de ZAP que pide el TP
+          docker run --rm --network host -v $(pwd)/reports:/zap/wrk/reports:rw -v $(pwd):/zap/wrk/:rw \
+            -t ghcr.io/zaproxy/zaproxy:stable \
+            zap.sh -cmd -autorun /zap/wrk/.zap/zap-plan.yml
 
       - name: Subir Reporte de Vulnerabilidades
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: zap-security-report
-          path: report_html.html
+          path: reports/
           retention-days: 7
+          if-no-files-found: warn
