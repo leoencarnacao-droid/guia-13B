@@ -30,9 +30,10 @@ jobs:
         with:
           target: 'http://localhost:8080'
           cmd_options: '-I'
-          # ESTO ES LO QUE FALTA: Le decimos que NO cree Issues
           allow_issue_writing: false
-          
+          # ESTO ES LO QUE FALTA: Evitamos que ZAP suba el artifact (lo hacemos nosotros abajo)
+          artifact_name: ''
+
       - name: Subir Reporte de Vulnerabilidades
         if: always()
         uses: actions/upload-artifact@v4
