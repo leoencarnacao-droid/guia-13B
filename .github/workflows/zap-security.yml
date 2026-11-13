@@ -21,14 +21,15 @@ jobs:
             fi
             sleep 2
           done
+          exit 1
 
       - name: ZAP Scan (Automation Framework)
         run: |
           mkdir -p reports
           chmod -R 777 reports
-          # El flag -P 8090 le dice a ZAP que use el puerto 8090 para su proxy interno, 
-          # evitando el choque con el 8080 de la app, pero el target sigue siendo el 8080.
-          docker run --rm --network host -v $(pwd)/reports:/zap/wrk/reports:rw -v $(pwd):/zap/wrk/:rw \
+          
+          # Usamos la ruta absoluta del workspace de GitHub para el volumen
+          docker run --rm -v ${{ github.workspace }}:/zap/wrk/:rw \
             -t ghcr.io/zaproxy/zaproxy:stable \
             zap.sh -cmd -autorun /zap/wrk/.zap/zap-plan.yml -P 8090
 
