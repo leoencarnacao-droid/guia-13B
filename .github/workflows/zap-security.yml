@@ -8,16 +8,30 @@ on:
 jobs:
   zap_scan:
     runs-on: ubuntu-latest
-    name: Scan the web application
+    name: Scan the Notes App
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Levantar la App con Docker Compose
+        run: |
+          docker compose up -d
+          echo "Esperando a que la Notes App esté lista..."
+          # Hacemos un bucle para esperar que la app responda en el puerto 8080
+          for i in {1..30}; do
+            if curl -s http://localhost:8080 > /dev/null; then
+              echo "¡App lista!"
+              break
+            fi
+            echo "Esperando... ($i/30)"
+            sleep 2
+          done
+
       - name: ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.10.0
         with:
-          target: 'https://example.com'
-          # Le decimos a ZAP que no falle el pipeline si encuentra alertas
+          target: 'http://localhost:8080'
+          # El flag -I evita que el pipeline falle si encuentra alertas (solo genera el reporte)
           cmd_options: '-I'
           
       - name: Subir Reporte de Vulnerabilidades
